@@ -1,0 +1,8 @@
+- hosts: tag_Env_master
+  roles:
+  - role: "kube_master"
+
+- hosts: tag_Env_slave
+  roles:
+  - role: "Kube_worker"
+

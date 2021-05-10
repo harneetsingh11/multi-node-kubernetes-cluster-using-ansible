@@ -1,0 +1,31 @@
+- hosts: localhost
+  tasks:
+  - name: Launching ec2_instance for master       
+    ec2_instance:
+     region: ap-south-1
+     instance_type: t2.micro
+     image_id: ami-010aff33ed5991201
+     security_group: sg-06bd25fa708663d75
+     name: k_master
+     state: present
+     tags:
+      Env: "master"
+     key_name: client
+     aws_access_key: "{{  u  }}"
+     aws_secret_key: "{{  p  }}"
+ 
+  - name: Launching ec2_instance for slave
+    ec2_instance:
+     region: ap-south-1
+     instance_type: t2.micro
+     image_id: ami-010aff33ed5991201
+     security_group: sg-06bd25fa708663d75
+     name: k_slave
+     state: present
+     tags:
+      Env: "slave"
+     key_name: client
+     aws_access_key: "{{  u  }}"
+     aws_secret_key: "{{  p  }}"
+
+

@@ -1,0 +1,45 @@
+---
+# tasks file for Kube_worker
+- name: configuring yum for kubeadm, kubelet, kubectl
+  yum_repository:
+   name: kubernetes
+   description: "Kubernetes"
+   baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+   gpgcheck: yes
+   gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+- name: installing packages(docker, kubeadm, kubelet, kubectl)
+  package:
+   name: "{{  item  }}"
+   state: present
+  loop:
+  - "docker"
+  - "kubeadm"
+  - "iproute-tc"
+- name: copy docker config file
+  copy:
+   src: daemon.json
+   dest:  /etc/docker/daemon.json
+- name: starting docker
+  service:
+   name: docker
+   state: started
+   enabled: yes
+- name: starting kubelet
+  service:
+   name: kubelet
+   state: started
+   enabled: yes
+- name: setting bridge network
+  copy:
+   src: k8s.conf
+   dest: /etc/sysctl.d/k8s.conf
+- name: enable network
+  command: "sysctl --system"
+  ignore_errors: True
+- name: copy join command in slave
+  copy:
+   src: /root/command
+   dest: /root/command
+- name: running join command in slave
+  shell: "bash /root/command"
+

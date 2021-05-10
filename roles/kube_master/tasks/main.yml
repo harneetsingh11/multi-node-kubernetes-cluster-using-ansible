@@ -1,0 +1,65 @@
+---
+# tasks file for kube_master
+
+- name: configuring yum for kubeadm, kubelet, kubectl
+  yum_repository:
+   name: kubernetes
+   description: "Kubernetes"
+   baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+   gpgcheck: yes
+   gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+- name: installing packages(docker, kubeadm, kubelet, kubectl)
+  package:
+   name: "{{  item  }}"
+   state: present
+  loop:
+  - "docker"
+  - "kubeadm"
+  - "iproute-tc"
+- name: copy docker config file
+  copy:
+   src: daemon.json
+   dest:  /etc/docker/daemon.json
+- name: starting docker
+  service:
+   name: docker
+   state: started
+   enabled: yes
+- name: starting kubelet
+  service:
+   name: kubelet
+   state: started
+   enabled: yes
+- name: setting bridge network
+  copy:
+   src: k8s.conf
+   dest: /etc/sysctl.d/k8s.conf
+- name: enable network
+  command: "sysctl --system"
+  ignore_errors: True
+- name: pulling docker images by kubeadm
+  command: "kubeadm config images pull"
+  ignore_errors: True
+- name: initalizing containers by kubeadm
+  command: "kubeadm init --pod-network-cidr=10.244.0.0/16 --ignore-preflight-errors=NumCPU --ignore-preflight-errors=Mem"
+  ignore_errors: True
+- name: configuring master as client creating directory
+  shell: "mkdir -p $HOME/.kube"
+  ignore_errors: True
+- name: copy config file
+  shell: "cp -i /etc/kubernetes/admin.conf $HOME/.kube/config"
+  ignore_errors: True
+- name: changing owner
+  shell: "chown $(id -u):$(id -g) $HOME/.kube/config"
+  ignore_errors: True
+- name: setting overlay network by using image flanner
+  command: "kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml"
+  ignore_errors: True
+- name: creating token for slave node to join
+  command: "kubeadm token create --print-join-command"
+  register: command
+  ignore_errors: true
+- name: copy command in file
+  local_action: copy content={{ command.stdout }} dest=/root/command  
+
+
